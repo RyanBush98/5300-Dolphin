@@ -12,14 +12,27 @@
 using namespace std;
 using namespace hsql;
 
+
+string exSelect(const SelectStatement *stmt){
+   return ("SELECT");
+
+}
+
+string exInsert(const InsertStatement * stmt){
+    return ("INSERT");
+}
+
+string exCreate(const CreateStatement *stmt){
+   return ("CREATE");
+}
 string execute(const SQLStatement *stmt) {
     switch (stmt->type()) {
         case kStmtSelect:
-            return stmt;
+            return exSelect((const SelectStatement *) stmt);
         case kStmtInsert:
-            return stmt;
+            return exInsert((const InsertStatement *) stmt);
         case kStmtCreate:
-            return stmt;
+            return exCreate((const CreateStatement *) stmt);
         default:
             return "Not implemented";
     }
