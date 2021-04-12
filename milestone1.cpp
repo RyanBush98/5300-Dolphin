@@ -14,6 +14,15 @@ using namespace hsql;
 
 
 string exSelect(const SelectStatement *stmt){
+  // select expressiosn stored in selectList
+  /*bool seenComma = false;
+  string buildSelect = "";
+  for (int i = 0; i < *stmt->selectList.size(); i++) {
+    if (seenComma) {
+      buildSelect += ", ";
+    }
+    buildSelect += 
+    }*/
    return ("SELECT");
 
 }
@@ -22,8 +31,36 @@ string exInsert(const InsertStatement * stmt){
     return ("INSERT");
 }
 
+string columnDefinitionToString(const ColumnDefinition *col) {
+    string ret(col->name);
+    switch (col->type) {
+        case ColumnDefinition::DOUBLE:
+            ret += " DOUBLE";
+            break;
+        case ColumnDefinition::INT:
+            ret += " INT";
+            break;
+        case ColumnDefinition::TEXT:
+            ret += " TEXT";
+            break;
+        default:
+            ret += " ...";
+            break;
+    }
+    return ret;
+}
+
 string exCreate(const CreateStatement *stmt){
-   return ("CREATE");
+  string buildCreate = "CREATE TABLE ";
+  buildCreate += string(stmt->tableName) + " (";
+  bool commaSeen = false;
+  for (ColumnDefinition * col : *stmt->columns) {
+    if (commaSeen) buildCreate += ", ";
+    buildCreate += columnDefinitionToString(col);
+    commaSeen = true;
+  }
+  buildCreate += ")";
+  return (buildCreate);
 }
 string execute(const SQLStatement *stmt) {
     switch (stmt->type()) {
