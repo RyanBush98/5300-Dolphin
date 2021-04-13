@@ -34,8 +34,8 @@ string columnDefinitionToString(const ColumnDefinition *col) {
 }
 
 string expressionToString(const Expr *expr){
-    	string ret;
-    	switch (expr->type) {
+        string ret;
+        switch (expr->type) {
         case kExprStar:
             ret += "*";
             break;
@@ -55,11 +55,99 @@ string expressionToString(const Expr *expr){
             ret += string(expr->name) + "?" + expr->expr->name;
             break;
         default:
-            ret += "???";  // in case there are exprssion types we don't know about here
+            ret += "???";  // in case there are exprssion types we don't know about here                                                                                                                    $
             break;
     }
 
 }
+
+string operatorExpressionToString(const Expr *expr) {
+    if (expr == NULL)
+        return "null";
+
+    string ret;
+    // Unary prefix operator: NOT
+    if (expr->opType == Expr::NOT)
+        ret += "NOT ";
+
+    // Left-hand side of expression
+    ret += expressionToString(expr->expr) + " ";
+
+    // Operator itself
+    switch (expr->opType) {
+        case Expr::SIMPLE_OP:
+            ret += expr->opChar;
+            break;
+        case Expr::AND:
+            ret += "AND";
+            break;
+        case Expr::OR:
+            ret += "OR";
+            break;
+        default:
+            break; // e.g., for NOT
+    }
+
+    // Right-hand side of expression (only present for binary operators)
+    if (expr->expr2 != NULL)
+        ret += " " + expressionToString(expr->expr2);
+    return ret;
+}
+
+
+/**
+ * Convert the hyrise TableRef AST back into the equivalent SQL
+ * @param table  table reference AST to unparse
+ * @return       SQL equivalent to *table
+ */
+string tableRefInfoToString(const TableRef *table) {
+    string ret;
+    switch (table->type) {
+        case kTableSelect:
+            ret += "kTableSelect FIXME"; // FIXME
+            break;
+        case kTableName:
+            ret += table->name;
+            if (table->alias != NULL)
+                ret += string(" AS ") + table->alias;
+            break;
+        case kTableJoin:
+            ret += tableRefInfoToString(table->join->left);
+            switch (table->join->type) {
+                case kJoinCross:
+                case kJoinInner:
+                    ret += " JOIN ";
+                    break;
+                case kJoinOuter:
+                case kJoinLeftOuter:
+                case kJoinLeft:
+                    ret += " LEFT JOIN ";
+                    break;
+                case kJoinRightOuter:
+                case kJoinRight:
+                    ret += " RIGHT JOIN ";
+                    break;
+                case kJoinNatural:
+                    ret += " NATURAL JOIN ";
+                    break;
+            }
+            ret += tableRefInfoToString(table->join->right);
+            if (table->join->condition != NULL)
+                ret += " ON " + expressionToString(table->join->condition);
+            break;
+        case kTableCrossProduct:
+            bool doComma = false;
+            for (TableRef *tbl : *table->list) {
+                if (doComma)
+                    ret += ", ";
+                ret += tableRefInfoToString(tbl);
+                doComma = true;
+            }
+            break;
+    }
+    return ret;
+}
+
 string exSelect(const SelectStatement *stmt){
    //select expressiosn stored in selectList
   string buildSelect = "SELECT ";
