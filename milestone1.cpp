@@ -12,29 +12,12 @@
 using namespace std;
 using namespace hsql;
 
-
-string exSelect(const SelectStatement *stmt){
-  // select expressiosn stored in selectList
-  /*bool seenComma = false;
-  string buildSelect = "";
-  for (int i = 0; i < *stmt->selectList.size(); i++) {
-    if (seenComma) {
-      buildSelect += ", ";
-    }
-    buildSelect += 
-    }*/
-   return ("SELECT");
-
-}
-
-string exInsert(const InsertStatement * stmt){
-    return ("INSERT");
-}
+string operatorExpressionToString(const Expr *expr);
 
 string columnDefinitionToString(const ColumnDefinition *col) {
     string ret(col->name);
     switch (col->type) {
-        case ColumnDefinition::DOUBLE:
+    	case ColumnDefinition::DOUBLE:
             ret += " DOUBLE";
             break;
         case ColumnDefinition::INT:
@@ -48,6 +31,53 @@ string columnDefinitionToString(const ColumnDefinition *col) {
             break;
     }
     return ret;
+}
+
+string expressionToString(const Expr *expr){
+    	string ret;
+    	switch (expr->type) {
+        case kExprStar:
+            ret += "*";
+            break;
+        case kExprColumnRef:
+            if (expr->table != NULL)
+                ret += string(expr->table) + ".";
+        case kExprLiteralString:
+            ret += expr->name;
+            break;
+        case kExprLiteralFloat:
+            ret += to_string(expr->fval);
+            break;
+        case kExprLiteralInt:
+            ret += to_string(expr->ival);
+            break;
+        case kExprFunctionRef:
+            ret += string(expr->name) + "?" + expr->expr->name;
+            break;
+        default:
+            ret += "???";  // in case there are exprssion types we don't know about here
+            break;
+    }
+
+}
+string exSelect(const SelectStatement *stmt){
+   //select expressiosn stored in selectList
+  string buildSelect = "SELECT ";
+  bool seenComma = false;
+  for (Expr *expr : *stmt->selectList){  
+     if (seenComma) {
+      buildSelect += expressionToString(expr);
+      seenComma = true; 
+     }
+  }
+    buildSelect += " FROM " + tableRefInfoToString(stmt->fromTable); 
+    
+   return (buildSelect);
+
+}
+
+string exInsert(const InsertStatement * stmt){
+    return ("INSERT");
 }
 
 string exCreate(const CreateStatement *stmt){
