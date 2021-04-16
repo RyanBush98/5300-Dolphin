@@ -153,13 +153,15 @@ string exSelect(const SelectStatement *stmt){
   string buildSelect = "SELECT ";
   bool seenComma = false;
   for (Expr *expr : *stmt->selectList){  
-     if (seenComma) {
+	 if (seenComma) {
+		 buildSelect += ", ";
+	 }
       buildSelect += expressionToString(expr);
       seenComma = true; 
-     }
-  }
+   }
     buildSelect += " FROM " + tableRefInfoToString(stmt->fromTable); 
-    
+    if(stmt->whereClause != NULL)
+	    buildSelect += " WHERE " + expressionToString(stmt->whereClause);
    return (buildSelect);
 
 }
@@ -199,6 +201,7 @@ int main(int argc, char **argv) {
     DbEnv env(0U);
     env.set_message_stream(&cout);
     env.set_error_stream(&cerr);
+    cout << "(sql5300: running with database environment at " << envDir << ")" << endl;
     while (true) {
         cout << "SQL> ";
         string stmt;
