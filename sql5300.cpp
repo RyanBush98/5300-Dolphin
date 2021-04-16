@@ -17,36 +17,36 @@ string operatorExpressionToString(const Expr *expr);
  * @return     SQL equivalent to *expr
  */
 string expressionToString(const Expr *expr) {
-    string ret;
+    string rStr;
     switch (expr->type) {
         case kExprStar:
-            ret += "*";
+            rStr += "*";
             break;
         case kExprColumnRef:
             if (expr->table != NULL)
-                ret += string(expr->table) + ".";
+                rStr += string(expr->table) + ".";
         case kExprLiteralString:
-            ret += expr->name;
+            rStr += expr->name;
             break;
         case kExprLiteralFloat:
-            ret += to_string(expr->fval);
+            rStr+= to_string(expr->fval);
             break;
         case kExprLiteralInt:
-            ret += to_string(expr->ival);
+            rStr += to_string(expr->ival);
             break;
         case kExprFunctionRef:
-            ret += string(expr->name) + "?" + expr->expr->name;
+            rStr += string(expr->name) + "?" + expr->expr->name;
             break;
         case kExprOperator:
-            ret += operatorExpressionToString(expr);
+            rStr += operatorExpressionToString(expr);
             break;
         default:
-            ret += "???";  // in case there are exprssion types we don't know about here
+            rStr += "???";  // in case there are exprssion types we don't know about here
             break;
     }
     if (expr->alias != NULL)
-        ret += string(" AS ") + expr->alias;
-    return ret;
+        rStr += string(" AS ") + expr->alias;
+    return rStr;
 }
 
 /**
@@ -58,24 +58,24 @@ string operatorExpressionToString(const Expr *expr) {
     if (expr == NULL)
         return "null";
 
-    string ret;
+    string rStr;
     // Unary prefix operator: NOT
     if (expr->opType == Expr::NOT)
-        ret += "NOT ";
+        rStr += "NOT ";
 
     // Left-hand side of expression
-    ret += expressionToString(expr->expr) + " ";
+    rStr += expressionToString(expr->expr) + " ";
 
     // Operator itself
     switch (expr->opType) {
         case Expr::SIMPLE_OP:
-            ret += expr->opChar;
+            rStr += expr->opChar;
             break;
         case Expr::AND:
-            ret += "AND";
+            rStr += "AND";
             break;
         case Expr::OR:
-            ret += "OR";
+            rStr += "OR";
             break;
         default:
             break; // e.g., for NOT
@@ -83,8 +83,8 @@ string operatorExpressionToString(const Expr *expr) {
 
     // Right-hand side of expression (only present for binary operators)
     if (expr->expr2 != NULL)
-        ret += " " + expressionToString(expr->expr2);
-    return ret;
+        rStr += " " + expressionToString(expr->expr2);
+    return rStr;
 }
 
 /**
@@ -93,51 +93,51 @@ string operatorExpressionToString(const Expr *expr) {
  * @return       SQL equivalent to *table
  */
 string tableRefInfoToString(const TableRef *table) {
-    string ret;
+    string rStr;
     switch (table->type) {
         case kTableSelect:
-            ret += "kTableSelect FIXME";
+            rStr += "kTableSelect FIXME";
             break;
         case kTableName:
-            ret += table->name;
+            rStr += table->name;
             if (table->alias != NULL)
-                ret += string(" AS ") + table->alias;
+                rStr += string(" AS ") + table->alias;
             break;
         case kTableJoin:
-            ret += tableRefInfoToString(table->join->left);
+            rStr += tableRefInfoToString(table->join->left);
             switch (table->join->type) {
                 case kJoinCross:
                 case kJoinInner:
-                    ret += " JOIN ";
+                    rStr += " JOIN ";
                     break;
                 case kJoinOuter:
                 case kJoinLeftOuter:
                 case kJoinLeft:
-                    ret += " LEFT JOIN ";
+                    rStr += " LEFT JOIN ";
                     break;
                 case kJoinRightOuter:
                 case kJoinRight:
-                    ret += " RIGHT JOIN ";
+                    rStr += " RIGHT JOIN ";
                     break;
                 case kJoinNatural:
-                    ret += " NATURAL JOIN ";
+                    rStr += " NATURAL JOIN ";
                     break;
             }
-            ret += tableRefInfoToString(table->join->right);
+            rStr += tableRefInfoToString(table->join->right);
             if (table->join->condition != NULL)
-                ret += " ON " + expressionToString(table->join->condition);
+                rStr += " ON " + expressionToString(table->join->condition);
             break;
         case kTableCrossProduct:
             bool doComma = false;
             for (TableRef *tbl : *table->list) {
                 if (doComma)
-                    ret += ", ";
-                ret += tableRefInfoToString(tbl);
+                    rStr += ", ";
+                rStr += tableRefInfoToString(tbl);
                 doComma = true;
             }
             break;
     }
-    return ret;
+    return rStr;
 }
 
 /**
@@ -146,22 +146,22 @@ string tableRefInfoToString(const TableRef *table) {
  * @return     SQL equivalent to *col
  */
 string columnDefinitionToString(const ColumnDefinition *col) {
-    string ret(col->name);
+    string rStr(col->name);
     switch (col->type) {
         case ColumnDefinition::DOUBLE:
-            ret += " DOUBLE";
+            rStr += " DOUBLE";
             break;
         case ColumnDefinition::INT:
-            ret += " INT";
+            rStr += " INT";
             break;
         case ColumnDefinition::TEXT:
-            ret += " TEXT";
+            rStr += " TEXT";
             break;
         default:
-            ret += " ...";
+            rStr += " ...";
             break;
     }
-    return ret;
+    return rStr;
 }
 
 /**
@@ -170,18 +170,18 @@ string columnDefinitionToString(const ColumnDefinition *col) {
  * @returns     a string (for now) of the SQL statment
  */
 string executeSelect(const SelectStatement *stmt) {
-    string ret("SELECT ");
+    string rStr("SELECT ");
     bool doComma = false;
     for (Expr *expr : *stmt->selectList) {
         if (doComma)
-            ret += ", ";
-        ret += expressionToString(expr);
+            rStr += ", ";
+        rStr += expressionToString(expr);
         doComma = true;
     }
-    ret += " FROM " + tableRefInfoToString(stmt->fromTable);
+    rStr += " FROM " + tableRefInfoToString(stmt->fromTable);
     if (stmt->whereClause != NULL)
-        ret += " WHERE " + expressionToString(stmt->whereClause);
-    return ret;
+        rStr += " WHERE " + expressionToString(stmt->whereClause);
+    return rStr;
 }
 
 /**
@@ -199,21 +199,21 @@ string executeInsert(const InsertStatement *stmt) {
  * @returns     a string (for now) of the SQL statment
  */
 string executeCreate(const CreateStatement *stmt) {
-    string ret("CREATE TABLE ");
+    string rStr("CREATE TABLE ");
     if (stmt->type != CreateStatement::kTable)
-        return ret + "...";
+         return rStr + "...";
     if (stmt->ifNotExists)
-        ret += "IF NOT EXISTS ";
-    ret += string(stmt->tableName) + " (";
+        rStr += "IF NOT EXISTS ";
+    rStr += string(stmt->tableName) + " (";
     bool doComma = false;
     for (ColumnDefinition *col : *stmt->columns) {
         if (doComma)
-            ret += ", ";
-        ret += columnDefinitionToString(col);
+            rStr += ", ";
+        rStr += columnDefinitionToString(col);
         doComma = true;
     }
-    ret += ")";
-    return ret;
+    rStr += ")";
+    return rStr;
 }
 
 /**
@@ -240,7 +240,7 @@ string execute(const SQLStatement *stmt) {
  */
 int main(int argc, char **argv) {
 
-    // Open/create the db enviroment
+    // Open or create the db enviroment
     if (argc != 2) {
         cerr << "Usage: cpsc5300: dbenvpiath" << endl;
         return 1;
@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        //run execute
+        //run execute fn
         for (uint i = 0; i < result->size(); ++i) {
             cout << execute(result->getStatement(i)) << endl;
         }
