@@ -117,7 +117,7 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
     }
 
     //do the slide
-    memcpy(this->address(this->end_free + 1 + shift), ))         //FIXME
+    memcpy(this->address(this->end_free + 1 + shift), ))
 
     //move headers to right
     RecordIDs* record_ids = this->ids();
