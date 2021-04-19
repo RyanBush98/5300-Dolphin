@@ -1,4 +1,6 @@
 # 5300-Dolphin
+![dolphin](/assets/dolphin.gif)
+<br>
 Sprint 1: Hailey Dice and Nathan Nishi
 
 ## Sprint 1: Milestone 1 Skeleton
@@ -25,7 +27,8 @@ $ ./sql5300 ~/cpsc5300/data
 See more [here](https://seattleu.instructure.com/courses/1597073/pages/getting-set-up-on-cs1) on Canvas
 
 ## Sprint 1: Milestone 2 Rudimentary Storage Engine
-Found under the Milestone2 tag, this milestone begins to create a relation manager by creating the basis of the heap storage engine, which uses a slotted page structure. This storage engine will have three layers:
+Found under the Milestone2 tag, this milestone begins to create a relation manager by creating the basis of the heap storage engine, which uses a slotted page structure.<br> ![fig13](/assets/fig13.png)
+<br><br>This storage engine will have three layers:
 1. **DbBlock:** how records are stored and retrieved within the block
 2. **DbFile:** that handles the collection of blocks that make up the relation, and also the creation, deletion and access to them. Uses BerkleyDB buffer manager for reading/writing to disk
 3. **DbRelation:** presents the logical view of the table

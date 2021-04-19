@@ -99,7 +99,7 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
     }
 
     //do the slide
-    memcpy(this->address(this->end_free + 1 + shift), ))         //FIXME
+    memcpy(this->address(this->end_free + 1 + shift), ))
 
     //move headers to right
     RecordIDs* record_ids = this->ids();
@@ -181,6 +181,8 @@ SlottedPage *HeapFile::get_new(void) {
 /**
  * ---------------------------Heaptable/dbrelation needs comment here---------------------------
  */
+
+/*
 HeapTable::HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes)
 {
     DbRelation(table_name, column_names, column_attributes);
@@ -192,6 +194,7 @@ void HeapTable::create(){
 }
 
 void HeapTable::create_if_not_exists(){
+
     try{
         this->open();
     }
@@ -263,4 +266,46 @@ Dbt* HeapTable::marshal(const ValueDict *row)
     Dbt *data = new Dbt(right_size_bytes, offset);
     return data;
 }
+  
+}*/
 
+bool test_heap_storage() {
+    ColumnNames column_names;
+    column_names.push_back("a");
+    column_names.push_back("b");
+    ColumnAttributes column_attributes;
+    ColumnAttribute ca(ColumnAttribute::INT);
+    column_attributes.push_back(ca);
+    ca.set_data_type(ColumnAttribute::TEXT);
+    column_attributes.push_back(ca);
+    HeapTable table1("_test_create_drop_cpp", column_names, column_attributes);
+    table1.create();
+    std::cout << "create ok" << std::endl;
+    table1.drop();  // drop makes the object unusable because of BerkeleyDB restriction -- maybe want to fix this some day
+    std::cout << "drop ok" << std::endl;
+
+    HeapTable table("_test_data_cpp", column_names, column_attributes);
+    table.create_if_not_exists();
+    std::cout << "create_if_not_exsts ok" << std::endl;
+
+    ValueDict row;
+    row["a"] = Value(12);
+    row["b"] = Value("Hello!");
+    std::cout << "try insert" << std::endl;
+    table.insert(&row);
+    std::cout << "insert ok" << std::endl;
+    Handles* handles = table.select();
+    std::cout << "select ok " << handles->size() << std::endl;
+    ValueDict *result = table.project((*handles)[0]);
+    std::cout << "project ok" << std::endl;
+    Value value = (*result)["a"];
+    if (value.n != 12)
+        return false;
+    value = (*result)["b"];
+    if (value.s != "Hello!")
+        return false;
+    table.drop();
+
+    return true;
+}
+>>>>>>> 669ce577c43e991cb652ce6bba9769a8b430a512
