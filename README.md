@@ -1,4 +1,6 @@
 # 5300-Dolphin
+![dolphin](/assets/dolphin.gif)
+<br>
 Sprint 1: Hailey Dice and Nathan Nishi
 
 ## Sprint 1: Milestone 1 Skeleton
