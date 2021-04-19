@@ -3,7 +3,7 @@
 #include <cstring>
 
 using namespace std;
-typedef u_int16_t uint16
+typedef u_int16_t u16
 
 bool test_heap_storage() {return true;}
 
@@ -24,10 +24,10 @@ SlottedPage::SlottedPage(Dbt &block, BlockID block_id, bool is_new = false) {
 RecordID SlottedPage::add(const Dbt *data) {
     if (!has_room(data->getsize())) //write get size
         throw DbBlockNoRoomError("No room for new block")
-    uint16 id = this->num_records;
-    uint16 size = (uint16) data->get_size();
+    u16 id = this->num_records;
+    u16 size = (u16) data->get_size();
     this->end_free -= size;
-    uint16 loc = this->end_free + 1;
+    u16 loc = this->end_free + 1;
     put_header();
     put_header(id, size, loc);
     memcpy(this->address(loc), data->get_data(), size);
@@ -37,8 +37,8 @@ RecordID SlottedPage::add(const Dbt *data) {
 //gets a record's data
 //will have to be unmarshaled
 Dbt* SlottedPage::get(RecordID recordID){
-    uint16 size;
-    uint16 loc;
+    u16 size;
+    u16 loc;
     get_header(size, loc, recordID);
     //what do if record does not exist?
     if(loc == 0){
@@ -49,37 +49,19 @@ Dbt* SlottedPage::get(RecordID recordID){
 
 //remove record by id
 //set location and id to 0 to show removed
-void SlottedPage::del(RecordID recordID){
-    uint16 size;
-    uint16 loc;
+void SlottedPage::delete(RecordID recordID){
+    u16 size;
+    u16 loc;
     get_header(size, loc, recordID);
     put_header(recordID, 0, 0);
-}
 
-void SlottedPage::put(RecordID record_id, const Dbt &data) {
-    uint16 size;
-    uint16 loc;
-    get_header(size, loc, record_id);
-    uint6 newSize = (uint16) data.get_size();
-    if (newSize > size) {
-        uint16 extraSpace = newSize - size;
-        if (!this->has_room(extraSpace))
-            throw DbBlockNoRoomError("not enough room to place new record!");
-        this->slide(loc, loc - extraSpace);
-        memcpy(this->address(loc - extraSpace), data.get_data(), newSize);
-    } else {
-        memcpy(this->address(loc), data.get_data(), newSize);
-        this->slide(loc + newSize, loc + size);
-    }
-    get_header(size, loc, record_id);
-    put_header(record_id, newSize, loc);
 }
 
 RecordIDs* SlottedPage::ids(void){
     RecordIDs *result = new RecordIDs;
-    uint16 size;
-    uint16 loc;
-    for(uint16 i = 1; i <= this->num_records;i++){
+    u16 size;
+    u16 loc;
+    for(u16 i = 1; i <= this->num_records;i++){
         if (loc != 0){
             result->push_back(i)                //what is push back?
         }
@@ -89,8 +71,8 @@ RecordIDs* SlottedPage::ids(void){
 
 //Get the size and offset for given id. For id of zero, it is the block header.
 void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id = 0){
-    size = get_n((uint16)4* id);
-    loc = get_n((uint16)(4 * id + 2));
+    size = get_n((u16)4* id);
+    loc = get_n((u16)(4 * id + 2));
 }
 
 //Put the size and offset for given id. For id of zero, store the block header
@@ -105,13 +87,13 @@ void put_header(RecordID id = 0, u_int16_t size = 0, u_int16_t loc = 0){
 
 //
 bool SlottedPage::has_room(u_int16_t size) {
-  uint16 capacity;
+  u16 capacity;
   capacity = this->end_free -(4 * (this->num_records + 1));
   return size <= capacity;
 }
 
 void SlottedPage::slide(u_int16_t start, u_int16_t end){
-    uint16 shift = end - start;
+    u16 shift = end - start;
     if (shift == 0){
         return;
     }
@@ -122,8 +104,8 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
     //move headers to right
     RecordIDs* record_ids = this->ids();
     for(unsigned int i=0; i < record_ids->size(); i++){        
-        uint16 loc;
-        uint16 size; 
+        u16 loc;
+        u16 size; 
         get_header(size, loc, temp->at(i));
         if (loc <= start){
             loc += shift;
@@ -133,21 +115,7 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
     this->end_free += shift;
     this->put_header();
     delete record_ids;
-}
 
-// Get 2-byte integer at given offset in block.
-uint16 SlottedPage::get_n(uint16 offset) {
-    return *(uint16*)this->address(offset);
-}
-
-// Put a 2-byte integer at given offset in block.
-void SlottedPage::put_n(uint16 offset, uint16 n) {
-    *(uint16*)this->address(offset) = n;
-}
-
-// Make a void* pointer for a given offset into the data block.
-void* SlottedPage::address(uint16 offset) {
-    return (void*)((char*)this->block.get_data() + offset);
 }
 
 
@@ -209,29 +177,6 @@ SlottedPage *HeapFile::get_new(void) {
     return page;
 }
 
-SlottedPage *HeapFile::get(BlockID block_id) {
-    Dbt key(&block_id, sizeof(block_id));
-    Dbt data;
-    this->db.get(nullptr, &key, &data, 0);
-    return new SlottedPage(data, block_id, false);
-}
-
-void HeapFile::put(DbBlock *block) {
-    int blockID = block->get_block_id();
-    Dbt key(&blockID, sizeof(blockID));
-    this->db.put(nullptr, &key, block->get_block(), 0);
-}
-
-BlockIDs *HeapFile::block_ids() const {
-    vector<BlockID>* IDs;
-    for (BlockID i = 1; i < (BlockID)this->(last+1); i++) {
-        IDs->push_back(i);
-    }
-    return IDs;
-}
-
-
-
 
 /**
  * ---------------------------Heaptable/dbrelation needs comment here---------------------------
@@ -247,5 +192,75 @@ void HeapTable::create(){
 }
 
 void HeapTable::create_if_not_exists(){
-    
+    try{
+        this->open();
+    }
+    catch(DbRelationError){
+        this->create();
+    }
 }
+
+void HeapTable::drop(){
+    this->file.drop();
+}
+
+void HeapTable::open(){
+    this->file.open();
+}
+
+void HeapTable::close(){
+    this->file.close();
+}
+
+Handle HeapTable::insert(const ValueDict *row){
+    this->open();
+    return this->append(row);
+}
+
+Handles* HeapTable::select(const ValueDict *where){
+    Handles* handles = new Handles();
+    BlockIDs* block_ids = file.block_ids();
+
+    for (const& block_id: *block_ids){
+        SlottedPage* block = file.get(block_id);
+        RecordIDs* record_ids = block->ids
+        for (const& record_id: *record_ids){
+            handles->push_back(Handle(block_id, record_id));
+        }
+        delete block_ids;
+        delete block;
+    }
+    delete block_ids;
+    delete handles;
+}
+
+//code provided in milestone prompt
+Dbt* HeapTable::marshal(const ValueDict *row)
+{
+    char *bytes = new char[DbBlock::BLOCK_SZ]; // more than we need (we insist that one row fits into DbBlock::BLOCK_SZ)
+    uint offset = 0;
+    uint col_num = 0;
+    for (auto const& column_name: this->column_names) {
+        ColumnAttribute ca = this->column_attributes[col_num++];
+        ValueDict::const_iterator column = row->find(column_name);
+        Value value = column->second;
+        if (ca.get_data_type() == ColumnAttribute::DataType::INT) {
+            *(int32_t*) (bytes + offset) = value.n;
+            offset += sizeof(int32_t);
+        } else if (ca.get_data_type() == ColumnAttribute::DataType::TEXT) {
+            uint size = value.s.length();
+            *(u_int16_t*) (bytes + offset) = size;
+            offset += sizeof(u_int16_t);
+            memcpy(bytes+offset, value.s.c_str(), size); // assume ascii for now
+            offset += size;
+        } else {
+            throw DbRelationError("Only know how to marshal INT and TEXT");
+        }
+    }
+    char *right_size_bytes = new char[offset];
+    memcpy(right_size_bytes, bytes, offset);
+    delete[] bytes;
+    Dbt *data = new Dbt(right_size_bytes, offset);
+    return data;
+}
+
