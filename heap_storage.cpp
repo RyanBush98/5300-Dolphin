@@ -99,7 +99,7 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
     }
 
     //do the slide
-    memcpy(this->address(this->end_free + 1 + shift), ))
+    memcpy(this->address(this->end_free + 1 + shift), ))         //FIXME
 
     //move headers to right
     RecordIDs* record_ids = this->ids();
@@ -181,8 +181,6 @@ SlottedPage *HeapFile::get_new(void) {
 /**
  * ---------------------------Heaptable/dbrelation needs comment here---------------------------
  */
-
-/*
 HeapTable::HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes)
 {
     DbRelation(table_name, column_names, column_attributes);
@@ -194,7 +192,6 @@ void HeapTable::create(){
 }
 
 void HeapTable::create_if_not_exists(){
-
     try{
         this->open();
     }
@@ -237,6 +234,44 @@ Handles* HeapTable::select(const ValueDict *where){
     delete handles;
 }
 
+Handle HeapTable::append(const ValueDict *row){
+    Dbt *data = this->marshal(row);
+    SlottedPage *block = this.get(this->file.get_last_block_id());
+    u_int16_t record_id;
+
+    try{
+        record_id = block->add(data);
+    }
+    catch(DbRelationError){
+        block = this->file.get_new();
+        record_id = block->add(data);
+    }
+
+    this->file.put(block);
+    return Handle(this->file.get_last_block_id, record_id);
+}
+
+ValueDict *HeapTable::validate(const ValueDict *row){
+    map <Identifier, Value> *full_row = {};
+    uint col_num = 0;
+
+    for(auto const &column_name: column_name){
+        ColumnAttribute cAtt = this->column_attributes[col_num++];
+        ValueDict::const_iterator column = row->find(column_name);
+        Value val = column->second;
+
+        if(cAtt.get_data_type() != ColumnAttribute::DataType::INT && cAtt.get_data_type() != ColumnAttribute::DataType::TEXT){
+            throw DbRelationError("Not text or int, don't know how to handle NULLs, defaults, etc. yet");
+        }
+        else{
+            val = row->at(column_name);
+
+        }
+    full_row[column_name] = val;
+    }
+    return full_row;
+}
+
 //code provided in milestone prompt
 Dbt* HeapTable::marshal(const ValueDict *row)
 {
@@ -266,46 +301,8 @@ Dbt* HeapTable::marshal(const ValueDict *row)
     Dbt *data = new Dbt(right_size_bytes, offset);
     return data;
 }
-  
-}*/
 
-bool test_heap_storage() {
-    ColumnNames column_names;
-    column_names.push_back("a");
-    column_names.push_back("b");
-    ColumnAttributes column_attributes;
-    ColumnAttribute ca(ColumnAttribute::INT);
-    column_attributes.push_back(ca);
-    ca.set_data_type(ColumnAttribute::TEXT);
-    column_attributes.push_back(ca);
-    HeapTable table1("_test_create_drop_cpp", column_names, column_attributes);
-    table1.create();
-    std::cout << "create ok" << std::endl;
-    table1.drop();  // drop makes the object unusable because of BerkeleyDB restriction -- maybe want to fix this some day
-    std::cout << "drop ok" << std::endl;
-
-    HeapTable table("_test_data_cpp", column_names, column_attributes);
-    table.create_if_not_exists();
-    std::cout << "create_if_not_exsts ok" << std::endl;
-
-    ValueDict row;
-    row["a"] = Value(12);
-    row["b"] = Value("Hello!");
-    std::cout << "try insert" << std::endl;
-    table.insert(&row);
-    std::cout << "insert ok" << std::endl;
-    Handles* handles = table.select();
-    std::cout << "select ok " << handles->size() << std::endl;
-    ValueDict *result = table.project((*handles)[0]);
-    std::cout << "project ok" << std::endl;
-    Value value = (*result)["a"];
-    if (value.n != 12)
-        return false;
-    value = (*result)["b"];
-    if (value.s != "Hello!")
-        return false;
-    table.drop();
-
-    return true;
+ValueDict *unmarshal(Dbt *data){            //not done!
+    uint offset = 0;
+    uint col_num = 0;
 }
->>>>>>> 669ce577c43e991cb652ce6bba9769a8b430a512
